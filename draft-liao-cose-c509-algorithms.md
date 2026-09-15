@@ -21,7 +21,7 @@ venue:
 author:
   - ins: L. Liao
     name: Lijun Liao
-    org: NIO
+    org: NIO Inc.
     email: lijun.liao@nio.io
 
 normative:
