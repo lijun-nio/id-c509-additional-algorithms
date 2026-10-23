@@ -1,7 +1,7 @@
 ---
 v: 3
 title: "Additional Algorithms for C509 Certificates"
-docname: draft-liao-cose-c509-algorithms-00
+docname: draft-liao-cose-c509-algorithms-01
 abbrev: C509 Algorithms
 cat: std
 submissiontype: IETF
@@ -64,17 +64,17 @@ informative:
 
 --- abstract
 
-This document registers additional algorithms in the IANA registries defined by {{I-D.ietf-cose-cbor-encoded-cert}}.  It extends the base C509 certificate specification with post-quantum cryptography (PQC) signature and key-encapsulation algorithms including ML-DSA, ML-KEM, stateful hash-based algorithms (HSS/LMS, XMSS, XMSS^MT), and composite algorithms.
+This document registers additional algorithms in the IANA registries defined by {{I-D.ietf-cose-cbor-encoded-cert}}.  It extends the C509 certificate specification with post-quantum cryptography (PQC) signature and key encapsulation algorithms: ML-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
 
 --- middle
 
 # Introduction {#intro}
 
-{{I-D.ietf-cose-cbor-encoded-cert}} defines C509, a compact CBOR encoding of X.509 certificates and certification requests, and establishes IANA registries for algorithms, extensions, RDN attribute types, and CR attribute types.  The base specification populates these registries with a set of commonly used values.
+{{I-D.ietf-cose-cbor-encoded-cert}} defines C509, a compact CBOR encoding of X.509 certificates and certification requests, and establishes IANA registries for algorithms, extensions, RDN attribute types, and CR attribute types.  That specification populates these registries with a set of commonly used values.
 
-This document adds additional entries to the algorithm registries, focusing on post-quantum cryptography (PQC) algorithms for signatures and key encapsulation, including ML-DSA, ML-KEM, stateful hash-based algorithms (HSS/LMS, XMSS, XMSS^MT), and composite algorithms.
+This document adds entries to the C509 Signature Algorithms and C509 Public Key Algorithms registries for PQC signature and key encapsulation algorithms: ML-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
 
-All new values are registered under the "CBOR Encoded X.509 (C509)" registry group.  This document follows the registration procedures defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
+All new values are registered in the "CBOR Encoded X.509 (C509) Parameters" registry group, following the registration procedures defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
 # Conventions and Definitions {#conventions}
 
@@ -84,11 +84,11 @@ This document uses the terminology and registry structure defined in {{I-D.ietf-
 
 # Additional Signature Algorithms {#sigalg}
 
-This section defines additional entries for the C509 Signature Algorithms Registry established in {{I-D.ietf-cose-cbor-encoded-cert}}.
+This section defines additional entries for the C509 Signature Algorithms registry established in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
 ## ML-DSA (Module-Lattice-Based Digital Signature Algorithm)
 
-ML-DSA is a lattice-based digital signature algorithm standardized by NIST as {{FIPS204}} and specified for use in X.509 PKI by {{RFC9881}}.  In C509, the `signature` field is a `bytes` value containing the raw ML-DSA signature bytes.
+ML-DSA is a lattice-based digital signature algorithm standardized by NIST as {{FIPS204}} and specified for use in X.509 PKI by {{RFC9881}}.  In C509, the `signature` field is a byte string containing the raw ML-DSA signature.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -122,9 +122,9 @@ ML-DSA is a lattice-based digital signature algorithm standardized by NIST as {{
 
 ## Stateful Hash-Based Signature Algorithms (HSS/LMS, XMSS, XMSS^MT)
 
-HSS and XMSS are stateful hash-based signature algorithms.  The Hierarchical Signature System (HSS) over the Leighton-Micali Signature (LMS) scheme is defined in {{RFC8554}} and its use in X.509 PKI is specified by {{RFC9802}} and {{RFC9708}}.  The eXtended Merkle Signature Scheme (XMSS) and its multi-tree variant (XMSS^MT) are defined in {{RFC8391}} and their use in X.509 PKI is specified by {{RFC9802}}.  In C509, the `signature` field is a `bytes` value containing the raw signature bytes for all three schemes.
+The Hierarchical Signature System (HSS) built on the Leighton-Micali Signature (LMS) scheme is defined in {{RFC8554}}; its use in X.509 PKI is specified in {{RFC9708}} and {{RFC9802}}.  The eXtended Merkle Signature Scheme (XMSS) and its multi-tree variant (XMSS^MT) are defined in {{RFC8391}}; their use in X.509 PKI is specified in {{RFC9802}}.  For all three schemes, the `signature` field in C509 is a byte string containing the raw signature.
 
-Note: These are stateful signature schemes.  Signature and public key sizes depend on the chosen parameter set.
+All three are stateful signature schemes.  Their signature and public key sizes depend on the chosen parameter set.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -159,9 +159,9 @@ Note: These are stateful signature schemes.  Signature and public key sizes depe
 
 ## Composite ML-DSA Signature Algorithms
 
-Composite ML-DSA combines a Module-Lattice-Based Digital Signature Algorithm (ML-DSA) component with a traditional signature algorithm (RSA, ECDSA, Ed25519, or Ed448) to form a single composite signature algorithm suitable for use in X.509 PKI structures.  These algorithms are defined in {{I-D.ietf-lamps-pq-composite-sigs}} and assigned OIDs under the PKIX algorithms arc (1.3.6.1.5.5.7.6).
+Composite ML-DSA combines an ML-DSA component with a traditional signature algorithm (RSA, ECDSA, Ed25519, or Ed448) into a single signature algorithm for use in X.509 PKI.  These algorithms are defined in {{I-D.ietf-lamps-pq-composite-sigs}}, which assigns their OIDs under the PKIX algorithms arc (1.3.6.1.5.5.7.6).
 
-In C509, composite signature values are encoded as a two-element CBOR array `CompositeSignatureValue` rather than as raw concatenated bytes.  The first element holds the raw ML-DSA signature bytes; the second element holds the traditional signature encoded as specified in {{Section 3.2.2 of I-D.ietf-cose-cbor-encoded-cert}}.
+In C509, a composite signature value is encoded as the two-element CBOR array `CompositeSignatureValue` rather than as concatenated bytes.  The first element is the raw ML-DSA signature; the second is the traditional signature, encoded as specified in {{Section 3.2.2 of I-D.ietf-cose-cbor-encoded-cert}}.
 
 ~~~
 CompositeSignatureValue = [
@@ -170,7 +170,7 @@ CompositeSignatureValue = [
 ]
 ~~~
 
-Parameters are absent.
+The AlgorithmIdentifier parameters are absent for all composite signature algorithms.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -324,7 +324,7 @@ Parameters are absent.
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;         |
 |       |              signature: CompositeSignatureValue;         |
 |       |              pqc:  bytes of size 4627,                   |
-|       |              trad: bytes of size 114                       |
+|       |              trad: bytes of size 114                     |
 +-------+----------------------------------------------------------+
 | TBD22 | Name:        sa-MLDSA87-RSA3072-PSS-SHA512               |
 |       | Identifiers: id-MLDSA87-RSA3072-PSS-SHA512               |
@@ -354,19 +354,19 @@ Parameters are absent.
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;         |
 |       |              signature: CompositeSignatureValue;         |
 |       |              pqc:  bytes of size 4627,                   |
-|       |              trad: bytes of size 132                       |
+|       |              trad: bytes of size 132                     |
 +-------+----------------------------------------------------------+
 ~~~
 
 # Additional Public Key Algorithms {#pkalg}
 
-This section defines additional entries for the C509 Public Key Algorithms Registry established in {{I-D.ietf-cose-cbor-encoded-cert}}.
+This section defines additional entries for the C509 Public Key Algorithms registry established in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
-When an algorithm OID appears in both the C509 Signature Algorithms Registry and the C509 Public Key Algorithms Registry, the same integer value is assigned in both registries.  This shared numbering allows decoders to use a single OID lookup table.  Algorithm OIDs that exist only as public key algorithms (e.g., key encapsulation mechanisms such as ML-KEM) receive unique integer values not used in the signature registry.
+When an algorithm OID appears in both the C509 Signature Algorithms Registry and the C509 Public Key Algorithms Registry, the same integer value is assigned in both registries.  This shared numbering allows decoders to use a single OID lookup table.  OIDs that identify only public key algorithms (e.g., key encapsulation mechanisms such as ML-KEM) are assigned integer values that are not used in the signature registry.
 
 ## ML-DSA Public Keys
 
-ML-DSA public keys in X.509 certificates are encoded as per {{RFC9881}}. In C509, the `subjectPublicKey` field is a `bytes` value containing the raw ML-DSA public key bytes.  The integer values TBD1, TBD2, and TBD3 are shared with the C509 Signature Algorithms Registry.
+ML-DSA public keys in X.509 certificates are encoded as specified in {{RFC9881}}.  In C509, the `subjectPublicKey` field is a byte string containing the raw ML-DSA public key.  The values TBD1, TBD2, and TBD3 are shared with the C509 Signature Algorithms registry.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -377,7 +377,7 @@ ML-DSA public keys in X.509 certificates are encoded as per {{RFC9881}}. In C509
 |       | OID:         2.16.840.1.101.3.4.3.17                     |
 |       | Parameters:  absent                                      |
 |       | DER:         06 09 60 86 48 01 65 03 04 03 11            |
-|       | Comments:    FIPS 204; RFC 9881;                      |
+|       | Comments:    FIPS 204; RFC 9881;                         |
 |       |              subjectPublicKey: bytes of size 1312        |
 +-------+----------------------------------------------------------+
 | TBD2  | Name:        ML-DSA-65                                   |
@@ -385,7 +385,7 @@ ML-DSA public keys in X.509 certificates are encoded as per {{RFC9881}}. In C509
 |       | OID:         2.16.840.1.101.3.4.3.18                     |
 |       | Parameters:  absent                                      |
 |       | DER:         06 09 60 86 48 01 65 03 04 03 12            |
-|       | Comments:    FIPS 204; RFC 9881;                      |
+|       | Comments:    FIPS 204; RFC 9881;                         |
 |       |              subjectPublicKey: bytes of size 1952        |
 +-------+----------------------------------------------------------+
 | TBD3  | Name:        ML-DSA-87                                   |
@@ -393,14 +393,14 @@ ML-DSA public keys in X.509 certificates are encoded as per {{RFC9881}}. In C509
 |       | OID:         2.16.840.1.101.3.4.3.19                     |
 |       | Parameters:  absent                                      |
 |       | DER:         06 09 60 86 48 01 65 03 04 03 13            |
-|       | Comments:    FIPS 204; RFC 9881;                      |
+|       | Comments:    FIPS 204; RFC 9881;                         |
 |       |              subjectPublicKey: bytes of size 2592        |
 +-------+----------------------------------------------------------+
 ~~~
 
 ## ML-KEM Public Keys (Key Encapsulation Mechanism)
 
-ML-KEM is a lattice-based key encapsulation mechanism standardized by NIST as {{FIPS203}} and specified for use in X.509 PKI by {{RFC9935}}.  ML-KEM OIDs do not appear in the signature registry, so TBD25, TBD26, and TBD27 are assigned exclusively to this registry.
+ML-KEM is a lattice-based key encapsulation mechanism standardized by NIST as {{FIPS203}} and specified for use in X.509 PKI by {{RFC9935}}.  In C509, the `subjectPublicKey` field is a byte string containing the raw ML-KEM public key.  Because ML-KEM OIDs do not appear in the signature registry, the values TBD25, TBD26, and TBD27 are used only in this registry.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -434,7 +434,7 @@ ML-KEM is a lattice-based key encapsulation mechanism standardized by NIST as {{
 
 ## Stateful Hash-Based Public Keys
 
-HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as per {{RFC9802}}.  In C509, the `subjectPublicKey` field is a `bytes` value containing the raw public key bytes.  Public key size depends on the chosen parameter set.
+HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as specified in {{RFC9802}}.  In C509, the `subjectPublicKey` field is a byte string containing the raw public key, whose size depends on the chosen parameter set.  The values TBD4, TBD5, and TBD6 are shared with the C509 Signature Algorithms registry.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -469,7 +469,12 @@ HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as per 
 
 ## Composite ML-DSA Public Keys {#sec-composite-mldsa-pkeys}
 
-In C509, composite public keys are encoded as a two-element CBOR array `CompositePublicKey` rather than as raw concatenated bytes.  Each element uses the C509 encoding of the corresponding standalone algorithm per {{I-D.ietf-cose-cbor-encoded-cert}}: ML-DSA public keys as raw bytes per {{RFC9881}}; ECDSA public keys as the compressed or uncompressed EC point; EdDSA public keys as raw bytes per {{RFC8032}}; and RSA public keys as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}, i.e., the modulus encoded as an unwrapped CBOR unsigned bignum (~biguint) with the exponent omitted when 65537.
+In C509, a composite public key is encoded as the two-element CBOR array `CompositePublicKey` rather than as concatenated bytes.  Each element uses the C509 encoding of the corresponding standalone algorithm as defined in {{I-D.ietf-cose-cbor-encoded-cert}}:
+
+* ML-DSA public keys are the raw public key as specified in {{RFC9881}}.
+* ECDSA public keys are the compressed or uncompressed EC point.
+* EdDSA public keys are the raw public key as specified in {{RFC8032}}.
+* RSA public keys are encoded as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}: the modulus as an unwrapped CBOR unsigned bignum (~biguint) when the exponent is 65537, and otherwise a two-element array of modulus and exponent.
 
 ~~~
 CompositePublicKey = [
@@ -478,7 +483,7 @@ CompositePublicKey = [
 ]
 ~~~
 
-The OIDs are the same as for the corresponding composite signature algorithms in {{I-D.ietf-lamps-pq-composite-sigs}}.
+The OIDs are those of the corresponding composite signature algorithms in {{I-D.ietf-lamps-pq-composite-sigs}}.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -618,7 +623,7 @@ The OIDs are the same as for the corresponding composite signature algorithms in
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;         |
 |       |              subjectPublicKey: CompositePublicKey;       |
 |       |              pqc:  bytes of size 2592,                   |
-|       |              trad: bytes of size 49 or 97               |
+|       |              trad: bytes of size 49 or 97                |
 +-------+----------------------------------------------------------+
 | TBD20 | Name:        pk-MLDSA87-ECDSA-brainpoolP384r1-SHA512     |
 |       | Identifiers: id-MLDSA87-ECDSA-brainpoolP384r1-SHA512     |
@@ -647,7 +652,7 @@ The OIDs are the same as for the corresponding composite signature algorithms in
 |       | DER:         06 08 2B 06 01 05 05 07 06 34               |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;         |
 |       |              subjectPublicKey: CompositePublicKey;       |
-|       |              pqc: bytes of size 2592,                    |
+|       |              pqc:  bytes of size 2592,                   |
 |       |              trad: bytes of size 384, or                 |
 |       |                    array of 2 elements                   |
 +-------+----------------------------------------------------------+
@@ -658,7 +663,7 @@ The OIDs are the same as for the corresponding composite signature algorithms in
 |       | DER:         06 08 2B 06 01 05 05 07 06 35               |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;         |
 |       |              subjectPublicKey: CompositePublicKey;       |
-|       |              pqc: bytes of size 2592,                    |
+|       |              pqc:  bytes of size 2592,                   |
 |       |              trad: bytes of size 512, or                 |
 |       |                    array of 2 elements                   |
 +-------+----------------------------------------------------------+
@@ -676,9 +681,13 @@ The OIDs are the same as for the corresponding composite signature algorithms in
 
 ## Composite ML-KEM Public Keys
 
-Composite ML-KEM combines an ML-KEM component with a traditional key encapsulation mechanism (RSA-OAEP, ECDH, or X25519/X448) to form a composite KEM for use in X.509 PKI structures.  These algorithms are defined in {{I-D.ietf-lamps-pq-composite-kem}} and assigned OIDs under the PKIX algorithms arc (1.3.6.1.5.5.7.6).  Composite ML-KEM OIDs do not appear in the signature registry, so TBD28 through TBD39 are assigned exclusively to this registry.
+Composite ML-KEM combines an ML-KEM component with a traditional key establishment algorithm (RSA-OAEP, ECDH, X25519, or X448) into a single KEM for use in X.509 PKI.  These algorithms are defined in {{I-D.ietf-lamps-pq-composite-kem}}, which assigns their OIDs under the PKIX algorithms arc (1.3.6.1.5.5.7.6).  Because composite ML-KEM OIDs do not appear in the signature registry, the values TBD28 through TBD39 are used only in this registry.
 
-In C509, composite KEM public keys are encoded using the same `CompositePublicKey` CDDL structure defined in {{sec-composite-mldsa-pkeys}}, where `pqc` holds the raw ML-KEM public key bytes and `trad` holds the C509 encoding of the traditional public key per {{I-D.ietf-cose-cbor-encoded-cert}}.  ECDH public keys use the compressed or uncompressed ECDH point; X25519 and X448 keys use the raw 32- or 56-byte key per {{RFC7748}}; RSA public keys are encoded as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}.
+In C509, composite KEM public keys use the `CompositePublicKey` structure defined in {{sec-composite-mldsa-pkeys}}.  The `pqc` element is the raw ML-KEM public key, and the `trad` element is the C509 encoding of the traditional public key as defined in {{I-D.ietf-cose-cbor-encoded-cert}}:
+
+* ECDH public keys are the compressed or uncompressed EC point.
+* X25519 and X448 public keys are the raw 32- or 56-byte key as specified in {{RFC7748}}.
+* RSA public keys are encoded as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}.
 
 ~~~
 +-------+----------------------------------------------------------+
@@ -814,19 +823,19 @@ In C509, composite KEM public keys are encoded using the same `CompositePublicKe
 
 The security considerations of {{I-D.ietf-cose-cbor-encoded-cert}} apply to all entries registered in this document.
 
-For post-quantum algorithms, implementers should consult the respective NIST standards ({{FIPS203}}, {{FIPS204}}) for security level and parameter guidance.
-
-When selecting algorithm value assignments, values for public key algorithms whose OID is the same as the corresponding signature algorithm MUST be assigned the same integer value.  This shared-integer policy is defined in this document to reduce decoder complexity.
+For post-quantum algorithms, implementers should consult the respective NIST standards ({{FIPS203}}, {{FIPS204}}) for guidance on security levels and parameter sets.
 
 # IANA Considerations {#iana}
 
 ## C509 Signature Algorithms Registry
 
-IANA is requested to assign values in the "C509 Signature Algorithms" registry under the registry group "CBOR Encoded X.509 (C509) Parameters" for the entries defined in {{sigalg}}.  The registration policy follows the policy defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
+IANA is requested to register the entries defined in {{sigalg}} in the "C509 Signature Algorithms" registry within the "CBOR Encoded X.509 (C509) Parameters" registry group, following the registration policy defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
 ## C509 Public Key Algorithms Registry
 
-IANA is requested to assign values in the "C509 Public Key Algorithms" registry under the registry group "CBOR Encoded X.509 (C509) Parameters" for the entries defined in {{pkalg}}.  The registration policy follows the policy defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
+IANA is requested to register the entries defined in {{pkalg}} in the "C509 Public Key Algorithms" registry within the "CBOR Encoded X.509 (C509) Parameters" registry group, following the registration policy defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
+
+A public key algorithm whose OID is identical to that of a signature algorithm MUST be assigned the same integer value in both registries (see {{pkalg}}).  This shared numbering reduces decoder complexity.
 
 --- back
 
@@ -837,4 +846,4 @@ TBD: add examples
 # Acknowledgements {#acknowledgements}
 {:numbered="false"}
 
-The authors want to thank xxx for reviewing and commenting on intermediate versions of the draft.
+The authors would like to thank xxx for reviewing and commenting on earlier versions of this document.
