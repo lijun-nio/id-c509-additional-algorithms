@@ -33,6 +33,8 @@ normative:
   RFC9802:
   RFC9881:
   RFC9935:
+  RFC8610:
+  RFC8949:
   I-D.ietf-cose-cbor-encoded-cert:
   I-D.ietf-lamps-pq-composite-sigs:
   I-D.ietf-lamps-pq-composite-kem:
@@ -78,7 +80,7 @@ All new values are registered in the "CBOR Encoded X.509 (C509)" registry group,
 
 {::boilerplate bcp14-tagged}
 
-This document uses the terminology and registry structure defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
+This document uses the terminology and registry structure defined in {{I-D.ietf-cose-cbor-encoded-cert}}.  CBOR data items are described using the Concise Data Definition Language (CDDL) {{RFC8610}}, and the CBOR terminology of {{RFC8949}} applies.
 
 # Additional Signature Algorithms {#sigalg}
 
@@ -87,6 +89,8 @@ This section defines additional entries for the C509 Signature Algorithms regist
 ## ML-DSA (Module-Lattice-Based Digital Signature Algorithm)
 
 ML-DSA is a lattice-based digital signature algorithm standardized by NIST as {{FIPS204}} and specified for use in X.509 PKI by {{RFC9881}}.  In C509, the signature value (`issuerSignatureValue` in a C509 certificate, `subjectSignatureValue` in a C509 certification request) is a byte string containing the raw ML-DSA signature.
+
+For natively signed C509 certificates and certification requests, the ML-DSA signature is computed over the CBOR-encoded TBSCertificate or TBSCertificationRequest, respectively, with the context string (ctx) set to the empty string, as specified in {{RFC9881}} for the DER-encoded structures.
 
 ~~~
 +-------+-----------------------------------------------------------+
@@ -122,7 +126,7 @@ ML-DSA is a lattice-based digital signature algorithm standardized by NIST as {{
 
 The Hierarchical Signature System (HSS) built on the Leighton-Micali Signature (LMS) scheme is defined in {{RFC8554}}; its use in X.509 PKI is specified in {{RFC9708}} and {{RFC9802}}.  The eXtended Merkle Signature Scheme (XMSS) and its multi-tree variant (XMSS^MT) are defined in {{RFC8391}}; their use in X.509 PKI is specified in {{RFC9802}}.  For all three schemes, the C509 signature value is a byte string containing the raw signature.
 
-All three are stateful signature schemes.  Their signature and public key sizes depend on the chosen parameter set.
+All three are stateful signature schemes.  Their signature sizes depend on the chosen parameter set, while their public key sizes depend only on the hash output length; see {{sec-hbs-pkeys}}.
 
 ~~~
 +-------+-----------------------------------------------------------+
@@ -161,12 +165,14 @@ Composite ML-DSA combines an ML-DSA component with a traditional signature algor
 
 In C509, a composite signature value is encoded as the two-element CBOR array `CompositeSignatureValue` rather than as concatenated bytes.  The first element is the raw ML-DSA signature.  The second element is the traditional signature, encoded as the C509 signature value of the corresponding standalone algorithm: a byte string containing the raw RSA or EdDSA signature, or, for ECDSA, the fixed-length encoding specified in {{Section 3.2.2 of I-D.ietf-cose-cbor-encoded-cert}}.
 
-~~~
+~~~ cddl
 CompositeSignatureValue = [
-  pqc  : any,  ; PQC component signature
-  trad : any   ; traditional component signature
+  pqc  : bytes,  ; ML-DSA component signature
+  trad : bytes,  ; traditional component signature
 ]
 ~~~
+
+For natively signed C509 certificates and certification requests, the composite signature is computed with the Composite-ML-DSA.Sign function of {{I-D.ietf-lamps-pq-composite-sigs}}, with the message M set to the CBOR-encoded TBSCertificate or TBSCertificationRequest, respectively, and the application context string (ctx) set to the empty string.  The resulting component signatures are then encoded as `CompositeSignatureValue`.
 
 The AlgorithmIdentifier parameters are absent for all composite signature algorithms.
 
@@ -430,9 +436,12 @@ ML-KEM is a lattice-based key encapsulation mechanism standardized by NIST as {{
 +-------+-----------------------------------------------------------+
 ~~~
 
-## Stateful Hash-Based Public Keys
+## Stateful Hash-Based Public Keys {#sec-hbs-pkeys}
 
-HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as specified in {{RFC9802}}.  In C509, the `subjectPublicKey` field is a byte string containing the raw public key, whose size depends on the chosen parameter set.  The values TBD4, TBD5, and TBD6 are the same as in the C509 Signature Algorithms registry.
+HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as specified in {{RFC9802}}.  In C509, the `subjectPublicKey` field is a byte string containing the raw public key, i.e., the `hss_public_key` structure of {{RFC8554}} or the `xmss_public_key` or `xmssmt_public_key` structure of {{RFC8391}}.  Its size depends only on the hash output length n of the parameter set:
+
+* HSS/LMS: 4 + 24 + n bytes, i.e., 52 bytes for n = 24 and 60 bytes for n = 32.
+* XMSS and XMSS^MT: 4 + 2n bytes, i.e., 52 bytes for n = 24, 68 bytes for n = 32, and 132 bytes for n = 64.  The values TBD4, TBD5, and TBD6 are the same as in the C509 Signature Algorithms registry.
 
 ~~~
 +-------+-----------------------------------------------------------+
@@ -445,7 +454,7 @@ HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as spec
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0D 06 0B 2A 86 48 86 F7 0D 01 09 10 03 11 |
 |       | Comments:    RFC 8554; RFC 9708; RFC 9802;                |
-|       |              subjectPublicKey: bytes of variable size     |
+|       |              subjectPublicKey: bytes of size 52 or 60     |
 +-------+-----------------------------------------------------------+
 | TBD5  | Name:        XMSS Hash-based Signature                    |
 |       | Identifiers: id-alg-xmss-hashsig                          |
@@ -453,7 +462,8 @@ HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as spec
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 22          |
 |       | Comments:    RFC 8391; RFC 9802;                          |
-|       |              subjectPublicKey: bytes of variable size     |
+|       |              subjectPublicKey: bytes of size 52, 68, or   |
+|       |                                132                        |
 +-------+-----------------------------------------------------------+
 | TBD6  | Name:        XMSS^MT Hash-based Signature                 |
 |       | Identifiers: id-alg-xmssmt-hashsig                        |
@@ -461,7 +471,8 @@ HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as spec
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 23          |
 |       | Comments:    RFC 8391; RFC 9802;                          |
-|       |              subjectPublicKey: bytes of variable size     |
+|       |              subjectPublicKey: bytes of size 52, 68, or   |
+|       |                                132                        |
 +-------+-----------------------------------------------------------+
 ~~~
 
@@ -474,12 +485,19 @@ In C509, a composite public key is encoded as the two-element CBOR array `Compos
 * EdDSA public keys are the raw public key as specified in {{RFC8032}}.
 * RSA public keys are encoded as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}: the modulus as an unwrapped CBOR unsigned bignum (~biguint) when the exponent is 65537, and otherwise a two-element array of modulus and exponent.
 
-~~~
+~~~ cddl
 CompositePublicKey = [
-  pqc  : any,  ; PQC component public key
-  trad : any   ; traditional component public key
+  pqc  : bytes,                 ; ML-DSA or ML-KEM public key
+  trad : bytes / RSAPublicKey,  ; traditional public key
+]
+
+RSAPublicKey = ~biguint / [
+  modulus  : ~biguint,
+  exponent : ~biguint,
 ]
 ~~~
+
+The `RSAPublicKey` alternative applies only when the traditional component is RSA; it is the encoding specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}.
 
 The OIDs are those of the corresponding composite signature algorithms in {{I-D.ietf-lamps-pq-composite-sigs}}, and the values TBD7 through TBD24 are the same as in the C509 Signature Algorithms registry.
 
@@ -887,7 +905,9 @@ TBD: add examples
   * Referred to the signature value as `issuerSignatureValue` or `subjectSignatureValue`.
   * Referenced Section 8.15 of that document for assigning the same value in the signature and public key algorithm registries, and moved this requirement from Security Considerations to IANA Considerations.
   * Referenced Sections 3.2.1 and 3.2.2 of that document for the EC public key and ECDSA signature encodings within composite structures.
-* Clarified the RSA public key encoding within `CompositePublicKey`.
+* Clarified the RSA public key encoding within `CompositePublicKey`, and made the CDDL for `CompositePublicKey` and `CompositeSignatureValue` precise.
+* Specified the context string for natively signed ML-DSA and composite ML-DSA signatures.
+* Specified the public key sizes of HSS/LMS, XMSS, and XMSS^MT.
 * Added suggested value ranges to the IANA considerations.
 * Added a section on the use of the registered algorithms in C509 private keys and certification requests.
 * Added security considerations for stateful hash-based signature algorithms.
