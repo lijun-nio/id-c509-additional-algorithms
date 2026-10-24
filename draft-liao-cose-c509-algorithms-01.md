@@ -57,6 +57,8 @@ normative:
 
 
 informative:
+  RFC5958:
+  RFC9964:
 
 --- abstract
 
@@ -815,11 +817,31 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 +-------+-----------------------------------------------------------+
 ~~~
 
+# Use in Other C509 Structures {#other}
+
+## Private Keys {#privkeys}
+
+{{Section 3.6 of I-D.ietf-cose-cbor-encoded-cert}} defines the `C509PrivateKey` structure, whose `subjectPrivateKeyAlgorithm` field takes values from the C509 Public Key Algorithms registry.  The entries registered in {{pkalg}} can therefore be used in `C509PrivateKey` with any C509 private key type, without further definitions in this document.
+
+For example, with C509PrivateKeyType 0, `subjectPrivateKey` is the PrivateKey OCTET STRING value field of the OneAsymmetricKey structure {{RFC5958}}, encoded as a CBOR byte string.  For the algorithms in this document, the PrivateKey content is defined in the following specifications:
+
+* ML-DSA: the `ML-DSA-44-PrivateKey`, `ML-DSA-65-PrivateKey`, or `ML-DSA-87-PrivateKey` defined in {{RFC9881}}, i.e., the 32-byte seed, the expanded private key, or both.
+* ML-KEM: the `ML-KEM-512-PrivateKey`, `ML-KEM-768-PrivateKey`, or `ML-KEM-1024-PrivateKey` defined in {{RFC9935}}, i.e., the 64-byte seed, the expanded private key, or both.
+* Composite ML-DSA and composite ML-KEM: the composite private key defined in {{I-D.ietf-lamps-pq-composite-sigs}} and {{I-D.ietf-lamps-pq-composite-kem}}, respectively.
+
+With C509PrivateKeyType 1, `subjectPrivateKey` is a COSE_Key.  For example, ML-DSA private keys can be represented as COSE_Key using the Algorithm Key Pair (AKP) key type defined in {{RFC9964}}.
+
+## Certification Requests {#csr}
+
+A C509 certification request is signed by the subject using the algorithm in `subjectSignatureAlgorithm` ({{Section 4.2 of I-D.ietf-cose-cbor-encoded-cert}}).  ML-KEM and composite ML-KEM keys cannot produce signatures, so a C509 certification request for such a key cannot prove possession of the private key with its own signature.  Another proof-of-possession mechanism is required, which this document does not define.
+
 # Security Considerations {#security}
 
 The security considerations of {{I-D.ietf-cose-cbor-encoded-cert}} apply to all entries registered in this document.
 
 For post-quantum algorithms, implementers should consult the respective NIST standards ({{FIPS203}}, {{FIPS204}}) for guidance on security levels and parameter sets.
+
+HSS/LMS, XMSS, and XMSS^MT are stateful signature schemes: each one-time key MUST be used to sign at most one message, and the signer has to update its private key state reliably after each signature.  Reusing a one-time key undermines the security of the scheme; see the security considerations of {{RFC8554}}, {{RFC8391}}, and {{RFC9802}}.  Copying or restoring the private key state, for example by exporting it in a private key structure, can lead to such reuse.
 
 # IANA Considerations {#iana}
 
@@ -833,6 +855,18 @@ IANA is requested to register the entries defined in {{pkalg}} in the "C509 Publ
 
 Per {{Section 8.15 of I-D.ietf-cose-cbor-encoded-cert}}, the public key algorithm entries TBD1 through TBD24 MUST be assigned the same values as the corresponding entries in the "C509 Signature Algorithms" registry.
 
+## Suggested Values
+
+*RFC Editor's Note:* Please remove this section before publication.
+
+Values in the interval \[0, 23\] are encoded in one byte, and values in the interval \[24, 255\] in two bytes ({{Section 8.1 of I-D.ietf-cose-cbor-encoded-cert}}).  Negative values are used in {{I-D.ietf-cose-cbor-encoded-cert}} mainly for deprecated algorithms, such as those based on SHA-1, and are not suggested for the algorithms in this document.  The public keys and signatures of these algorithms are hundreds to thousands of bytes long, so saving one byte per algorithm identifier has little effect on certificate size, whereas the one-byte interval is small.  The following assignments are therefore suggested:
+
+* ML-DSA (TBD1 through TBD3): values from the interval \[0, 23\] that are unassigned in both registries, as ML-DSA is expected to be widely used.
+* ML-KEM (TBD25 through TBD27): values from the interval \[0, 23\] that are unassigned in the "C509 Public Key Algorithms" registry.  These values need not be unassigned in the "C509 Signature Algorithms" registry.
+* HSS/LMS, XMSS, and XMSS^MT (TBD4 through TBD6): values from the interval \[24, 255\].
+* Composite ML-DSA (TBD7 through TBD24): a contiguous block of values from the interval \[24, 255\] that are unassigned in both registries.
+* Composite ML-KEM (TBD28 through TBD39): a contiguous block of values from the interval \[24, 255\].
+
 --- back
 
 # Examples {#examples}
@@ -842,7 +876,7 @@ TBD: add examples
 # Change Log {#changelog}
 {:numbered="false"}
 
-> RFC Editor: Please remove this section before publication.
+*RFC Editor's Note:* Please remove this section before publication.
 
 ## Changes from -00 to -01
 {:numbered="false"}
@@ -854,6 +888,9 @@ TBD: add examples
   * Referenced Section 8.15 of that document for assigning the same value in the signature and public key algorithm registries, and moved this requirement from Security Considerations to IANA Considerations.
   * Referenced Sections 3.2.1 and 3.2.2 of that document for the EC public key and ECDSA signature encodings within composite structures.
 * Clarified the RSA public key encoding within `CompositePublicKey`.
+* Added suggested value ranges to the IANA considerations.
+* Added a section on the use of the registered algorithms in C509 private keys and certification requests.
+* Added security considerations for stateful hash-based signature algorithms.
 * Removed unused references.
 * Editorial improvements.
 
