@@ -25,15 +25,12 @@ author:
     email: lijun.liao@nio.io
 
 normative:
-  RFC7748:
-  RFC8032:
   RFC8391:
   RFC8554:
   RFC9708:
   RFC9802:
   RFC9881:
   RFC9935:
-  RFC8610:
   RFC8949:
   I-D.ietf-cose-cbor-encoded-cert:
   I-D.ietf-lamps-pq-composite-sigs:
@@ -61,6 +58,7 @@ normative:
 informative:
   RFC5958:
   RFC9964:
+  I-D.ietf-jose-pq-composite-sigs:
 
 --- abstract
 
@@ -80,7 +78,7 @@ All new values are registered in the "CBOR Encoded X.509 (C509)" registry group,
 
 {::boilerplate bcp14-tagged}
 
-This document uses the terminology and registry structure defined in {{I-D.ietf-cose-cbor-encoded-cert}}.  CBOR data items are described using the Concise Data Definition Language (CDDL) {{RFC8610}}, and the CBOR terminology of {{RFC8949}} applies.
+This document uses the terminology and registry structure defined in {{I-D.ietf-cose-cbor-encoded-cert}}.  The CBOR terminology of {{RFC8949}} applies.
 
 # Additional Signature Algorithms {#sigalg}
 
@@ -163,16 +161,9 @@ All three are stateful signature schemes.  Their signature sizes depend on the c
 
 Composite ML-DSA combines an ML-DSA component with a traditional signature algorithm (RSA, ECDSA, Ed25519, or Ed448) into a single signature algorithm for use in X.509 PKI.  These algorithms are defined in {{I-D.ietf-lamps-pq-composite-sigs}}, which assigns their OIDs under the PKIX algorithms arc (1.3.6.1.5.5.7.6).
 
-In C509, a composite signature value is encoded as the two-element CBOR array `CompositeSignatureValue` rather than as concatenated bytes.  The first element is the raw ML-DSA signature.  The second element is the traditional signature, encoded as the C509 signature value of the corresponding standalone algorithm: a byte string containing the raw RSA or EdDSA signature, or, for ECDSA, the fixed-length encoding specified in {{Section 3.2.2 of I-D.ietf-cose-cbor-encoded-cert}}.
+In C509, the signature value is a byte string containing the composite signature value as serialized by SerializeSignatureValue in {{I-D.ietf-lamps-pq-composite-sigs}}, i.e., the ML-DSA signature followed by the traditional signature, exactly as in X.509.  The traditional component is not re-encoded.  In particular, ECDSA signatures remain DER-encoded Ecdsa-Sig-Value structures, so the size of composite signatures with an ECDSA component varies slightly.  This is the same encoding as used for composite ML-DSA signatures in JOSE and COSE {{I-D.ietf-jose-pq-composite-sigs}}, so composite signature values need no conversion between X.509, C509, and COSE.
 
-~~~ cddl
-CompositeSignatureValue = [
-  pqc  : bytes,  ; ML-DSA component signature
-  trad : bytes,  ; traditional component signature
-]
-~~~
-
-For natively signed C509 certificates and certification requests, the composite signature is computed with the Composite-ML-DSA.Sign function of {{I-D.ietf-lamps-pq-composite-sigs}}, with the message M set to the CBOR-encoded TBSCertificate or TBSCertificationRequest, respectively, and the application context string (ctx) set to the empty string.  The resulting component signatures are then encoded as `CompositeSignatureValue`.
+For natively signed C509 certificates and certification requests, the composite signature is computed with the Composite-ML-DSA.Sign function of {{I-D.ietf-lamps-pq-composite-sigs}}, with the message M set to the CBOR-encoded TBSCertificate or TBSCertificationRequest, respectively, and the application context string (ctx) set to the empty string.
 
 The AlgorithmIdentifier parameters are absent for all composite signature algorithms.
 
@@ -186,9 +177,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 25          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 2420,                    |
-|       |              trad: bytes of size 256                      |
+|       |              signature: bytes of size 2676                |
 +-------+-----------------------------------------------------------+
 | TBD8  | Name:        sa-MLDSA44-RSA2048-PKCS15-SHA256             |
 |       | Identifiers: id-MLDSA44-RSA2048-PKCS15-SHA256             |
@@ -196,9 +185,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 26          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 2420,                    |
-|       |              trad: bytes of size 256                      |
+|       |              signature: bytes of size 2676                |
 +-------+-----------------------------------------------------------+
 | TBD9  | Name:        sa-MLDSA44-Ed25519-SHA512                    |
 |       | Identifiers: id-MLDSA44-Ed25519-SHA512                    |
@@ -206,9 +193,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 27          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 2420,                    |
-|       |              trad: bytes of size 64                       |
+|       |              signature: bytes of size 2484                |
 +-------+-----------------------------------------------------------+
 | TBD10 | Name:        sa-MLDSA44-ECDSA-P256-SHA256                 |
 |       | Identifiers: id-MLDSA44-ECDSA-P256-SHA256                 |
@@ -216,9 +201,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 28          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 2420,                    |
-|       |              trad: bytes of size 64                       |
+|       |              signature: bytes of size at most 2492        |
 +-------+-----------------------------------------------------------+
 | TBD11 | Name:        sa-MLDSA65-RSA3072-PSS-SHA512                |
 |       | Identifiers: id-MLDSA65-RSA3072-PSS-SHA512                |
@@ -226,9 +209,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 29          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 384                      |
+|       |              signature: bytes of size 3693                |
 +-------+-----------------------------------------------------------+
 | TBD12 | Name:        sa-MLDSA65-RSA3072-PKCS15-SHA512             |
 |       | Identifiers: id-MLDSA65-RSA3072-PKCS15-SHA512             |
@@ -236,9 +217,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2A          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 384                      |
+|       |              signature: bytes of size 3693                |
 +-------+-----------------------------------------------------------+
 | TBD13 | Name:        sa-MLDSA65-RSA4096-PSS-SHA512                |
 |       | Identifiers: id-MLDSA65-RSA4096-PSS-SHA512                |
@@ -246,9 +225,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2B          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 512                      |
+|       |              signature: bytes of size 3821                |
 +-------+-----------------------------------------------------------+
 | TBD14 | Name:        sa-MLDSA65-RSA4096-PKCS15-SHA512             |
 |       | Identifiers: id-MLDSA65-RSA4096-PKCS15-SHA512             |
@@ -256,9 +233,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2C          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 512                      |
+|       |              signature: bytes of size 3821                |
 +-------+-----------------------------------------------------------+
 | TBD15 | Name:        sa-MLDSA65-ECDSA-P256-SHA512                 |
 |       | Identifiers: id-MLDSA65-ECDSA-P256-SHA512                 |
@@ -266,9 +241,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2D          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 64                       |
+|       |              signature: bytes of size at most 3381        |
 +-------+-----------------------------------------------------------+
 | TBD16 | Name:        sa-MLDSA65-ECDSA-P384-SHA512                 |
 |       | Identifiers: id-MLDSA65-ECDSA-P384-SHA512                 |
@@ -276,9 +249,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2E          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 96                       |
+|       |              signature: bytes of size at most 3413        |
 +-------+-----------------------------------------------------------+
 | TBD17 | Name:        sa-MLDSA65-ECDSA-brainpoolP256r1-SHA512      |
 |       | Identifiers: id-MLDSA65-ECDSA-brainpoolP256r1-SHA512      |
@@ -286,9 +257,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2F          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 64                       |
+|       |              signature: bytes of size at most 3381        |
 +-------+-----------------------------------------------------------+
 | TBD18 | Name:        sa-MLDSA65-Ed25519-SHA512                    |
 |       | Identifiers: id-MLDSA65-Ed25519-SHA512                    |
@@ -296,9 +265,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 30          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 3309,                    |
-|       |              trad: bytes of size 64                       |
+|       |              signature: bytes of size 3373                |
 +-------+-----------------------------------------------------------+
 | TBD19 | Name:        sa-MLDSA87-ECDSA-P384-SHA512                 |
 |       | Identifiers: id-MLDSA87-ECDSA-P384-SHA512                 |
@@ -306,9 +273,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 31          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 4627,                    |
-|       |              trad: bytes of size 96                       |
+|       |              signature: bytes of size at most 4731        |
 +-------+-----------------------------------------------------------+
 | TBD20 | Name:        sa-MLDSA87-ECDSA-brainpoolP384r1-SHA512      |
 |       | Identifiers: id-MLDSA87-ECDSA-brainpoolP384r1-SHA512      |
@@ -316,9 +281,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 32          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 4627,                    |
-|       |              trad: bytes of size 96                       |
+|       |              signature: bytes of size at most 4731        |
 +-------+-----------------------------------------------------------+
 | TBD21 | Name:        sa-MLDSA87-Ed448-SHAKE256                    |
 |       | Identifiers: id-MLDSA87-Ed448-SHAKE256                    |
@@ -326,9 +289,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 33          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 4627,                    |
-|       |              trad: bytes of size 114                      |
+|       |              signature: bytes of size 4741                |
 +-------+-----------------------------------------------------------+
 | TBD22 | Name:        sa-MLDSA87-RSA3072-PSS-SHA512                |
 |       | Identifiers: id-MLDSA87-RSA3072-PSS-SHA512                |
@@ -336,9 +297,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 34          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 4627,                    |
-|       |              trad: bytes of size 384                      |
+|       |              signature: bytes of size 5011                |
 +-------+-----------------------------------------------------------+
 | TBD23 | Name:        sa-MLDSA87-RSA4096-PSS-SHA512                |
 |       | Identifiers: id-MLDSA87-RSA4096-PSS-SHA512                |
@@ -346,9 +305,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 35          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 4627,                    |
-|       |              trad: bytes of size 512                      |
+|       |              signature: bytes of size 5139                |
 +-------+-----------------------------------------------------------+
 | TBD24 | Name:        sa-MLDSA87-ECDSA-P521-SHA512                 |
 |       | Identifiers: id-MLDSA87-ECDSA-P521-SHA512                 |
@@ -356,9 +313,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 36          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              signature: CompositeSignatureValue;          |
-|       |              pqc:  bytes of size 4627,                    |
-|       |              trad: bytes of size 132                      |
+|       |              signature: bytes of size at most 4766        |
 +-------+-----------------------------------------------------------+
 ~~~
 
@@ -478,26 +433,7 @@ HSS/LMS, XMSS, and XMSS^MT public keys in X.509 certificates are encoded as spec
 
 ## Composite ML-DSA Public Keys {#sec-composite-mldsa-pkeys}
 
-In C509, a composite public key is encoded as the two-element CBOR array `CompositePublicKey` rather than as concatenated bytes.  Each element uses the C509 encoding of the corresponding standalone algorithm as defined in {{I-D.ietf-cose-cbor-encoded-cert}}:
-
-* ML-DSA public keys are the raw public key as specified in {{RFC9881}}.
-* ECDSA public keys are the EC point, optionally point-compressed, as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}.
-* EdDSA public keys are the raw public key as specified in {{RFC8032}}.
-* RSA public keys are encoded as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}: the modulus as an unwrapped CBOR unsigned bignum (~biguint) when the exponent is 65537, and otherwise a two-element array of modulus and exponent.
-
-~~~ cddl
-CompositePublicKey = [
-  pqc  : bytes,                 ; ML-DSA or ML-KEM public key
-  trad : bytes / RSAPublicKey,  ; traditional public key
-]
-
-RSAPublicKey = ~biguint / [
-  modulus  : ~biguint,
-  exponent : ~biguint,
-]
-~~~
-
-The `RSAPublicKey` alternative applies only when the traditional component is RSA; it is the encoding specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}.
+In C509, the `subjectPublicKey` field is a byte string containing the composite public key as serialized by SerializePublicKey in {{I-D.ietf-lamps-pq-composite-sigs}}, i.e., the ML-DSA public key followed by the traditional public key, exactly as in X.509.  The traditional component is not re-encoded: RSA public keys remain DER-encoded RSAPublicKey structures, and ECDSA public keys remain uncompressed points.  This is the same encoding as used for the `pub` parameter of composite ML-DSA keys in JOSE and COSE {{I-D.ietf-jose-pq-composite-sigs}}.  The sizes given below for RSA-based composites assume the public exponent 65537.
 
 The OIDs are those of the corresponding composite signature algorithms in {{I-D.ietf-lamps-pq-composite-sigs}}, and the values TBD7 through TBD24 are the same as in the C509 Signature Algorithms registry.
 
@@ -511,10 +447,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 25          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1312,                    |
-|       |              trad: bytes of size 256, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 1582         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD8  | Name:        pk-MLDSA44-RSA2048-PKCS15-SHA256             |
 |       | Identifiers: id-MLDSA44-RSA2048-PKCS15-SHA256             |
@@ -522,10 +456,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 26          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1312,                    |
-|       |              trad: bytes of size 256, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 1582         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD9  | Name:        pk-MLDSA44-Ed25519-SHA512                    |
 |       | Identifiers: id-MLDSA44-Ed25519-SHA512                    |
@@ -533,9 +465,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 27          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1312,                    |
-|       |              trad: bytes of size 32                       |
+|       |              subjectPublicKey: bytes of size 1344         |
 +-------+-----------------------------------------------------------+
 | TBD10 | Name:        pk-MLDSA44-ECDSA-P256-SHA256                 |
 |       | Identifiers: id-MLDSA44-ECDSA-P256-SHA256                 |
@@ -543,9 +473,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 28          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1312,                    |
-|       |              trad: bytes of size 33 or 65                 |
+|       |              subjectPublicKey: bytes of size 1377         |
 +-------+-----------------------------------------------------------+
 | TBD11 | Name:        pk-MLDSA65-RSA3072-PSS-SHA512                |
 |       | Identifiers: id-MLDSA65-RSA3072-PSS-SHA512                |
@@ -553,10 +481,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 29          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 384, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 2350         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD12 | Name:        pk-MLDSA65-RSA3072-PKCS15-SHA512             |
 |       | Identifiers: id-MLDSA65-RSA3072-PKCS15-SHA512             |
@@ -564,10 +490,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2A          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 384, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 2350         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD13 | Name:        pk-MLDSA65-RSA4096-PSS-SHA512                |
 |       | Identifiers: id-MLDSA65-RSA4096-PSS-SHA512                |
@@ -575,10 +499,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2B          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 512, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 2478         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD14 | Name:        pk-MLDSA65-RSA4096-PKCS15-SHA512             |
 |       | Identifiers: id-MLDSA65-RSA4096-PKCS15-SHA512             |
@@ -586,10 +508,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2C          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 512, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 2478         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD15 | Name:        pk-MLDSA65-ECDSA-P256-SHA512                 |
 |       | Identifiers: id-MLDSA65-ECDSA-P256-SHA512                 |
@@ -597,9 +517,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2D          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 33 or 65                 |
+|       |              subjectPublicKey: bytes of size 2017         |
 +-------+-----------------------------------------------------------+
 | TBD16 | Name:        pk-MLDSA65-ECDSA-P384-SHA512                 |
 |       | Identifiers: id-MLDSA65-ECDSA-P384-SHA512                 |
@@ -607,9 +525,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2E          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 49 or 97                 |
+|       |              subjectPublicKey: bytes of size 2049         |
 +-------+-----------------------------------------------------------+
 | TBD17 | Name:        pk-MLDSA65-ECDSA-brainpoolP256r1-SHA512      |
 |       | Identifiers: id-MLDSA65-ECDSA-brainpoolP256r1-SHA512      |
@@ -617,9 +533,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 2F          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 33 or 65                 |
+|       |              subjectPublicKey: bytes of size 2017         |
 +-------+-----------------------------------------------------------+
 | TBD18 | Name:        pk-MLDSA65-Ed25519-SHA512                    |
 |       | Identifiers: id-MLDSA65-Ed25519-SHA512                    |
@@ -627,9 +541,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 30          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1952,                    |
-|       |              trad: bytes of size 32                       |
+|       |              subjectPublicKey: bytes of size 1984         |
 +-------+-----------------------------------------------------------+
 | TBD19 | Name:        pk-MLDSA87-ECDSA-P384-SHA512                 |
 |       | Identifiers: id-MLDSA87-ECDSA-P384-SHA512                 |
@@ -637,9 +549,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 31          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 2592,                    |
-|       |              trad: bytes of size 49 or 97                 |
+|       |              subjectPublicKey: bytes of size 2689         |
 +-------+-----------------------------------------------------------+
 | TBD20 | Name:        pk-MLDSA87-ECDSA-brainpoolP384r1-SHA512      |
 |       | Identifiers: id-MLDSA87-ECDSA-brainpoolP384r1-SHA512      |
@@ -647,9 +557,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 32          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 2592,                    |
-|       |              trad: bytes of size 49 or 97                 |
+|       |              subjectPublicKey: bytes of size 2689         |
 +-------+-----------------------------------------------------------+
 | TBD21 | Name:        pk-MLDSA87-Ed448-SHAKE256                    |
 |       | Identifiers: id-MLDSA87-Ed448-SHAKE256                    |
@@ -657,9 +565,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 33          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 2592,                    |
-|       |              trad: bytes of size 57                       |
+|       |              subjectPublicKey: bytes of size 2649         |
 +-------+-----------------------------------------------------------+
 | TBD22 | Name:        pk-MLDSA87-RSA3072-PSS-SHA512                |
 |       | Identifiers: id-MLDSA87-RSA3072-PSS-SHA512                |
@@ -667,10 +573,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 34          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 2592,                    |
-|       |              trad: bytes of size 384, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 2990         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD23 | Name:        pk-MLDSA87-RSA4096-PSS-SHA512                |
 |       | Identifiers: id-MLDSA87-RSA4096-PSS-SHA512                |
@@ -678,10 +582,8 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 35          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 2592,                    |
-|       |              trad: bytes of size 512, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 3118         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD24 | Name:        pk-MLDSA87-ECDSA-P521-SHA512                 |
 |       | Identifiers: id-MLDSA87-ECDSA-P521-SHA512                 |
@@ -689,9 +591,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 36          |
 |       | Comments:    draft-ietf-lamps-pq-composite-sigs;          |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 2592,                    |
-|       |              trad: bytes of size 67 or 133                |
+|       |              subjectPublicKey: bytes of size 2725         |
 +-------+-----------------------------------------------------------+
 ~~~
 
@@ -699,11 +599,7 @@ The OIDs are those of the corresponding composite signature algorithms in {{I-D.
 
 Composite ML-KEM combines an ML-KEM component with a traditional key establishment algorithm (RSA-OAEP, ECDH, X25519, or X448) into a single KEM for use in X.509 PKI.  These algorithms are defined in {{I-D.ietf-lamps-pq-composite-kem}}, which assigns their OIDs under the PKIX algorithms arc (1.3.6.1.5.5.7.6).  These entries have no counterpart in the C509 Signature Algorithms registry.
 
-In C509, composite KEM public keys use the `CompositePublicKey` structure defined in {{sec-composite-mldsa-pkeys}}.  The `pqc` element is the raw ML-KEM public key, and the `trad` element is the C509 encoding of the traditional public key as defined in {{I-D.ietf-cose-cbor-encoded-cert}}:
-
-* ECDH public keys are the EC point, optionally point-compressed, as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}.
-* X25519 and X448 public keys are the raw 32- or 56-byte key as specified in {{RFC7748}}.
-* RSA public keys are encoded as specified in {{Section 3.2.1 of I-D.ietf-cose-cbor-encoded-cert}}.
+In C509, the `subjectPublicKey` field is a byte string containing the composite public key as serialized by SerializePublicKey in {{I-D.ietf-lamps-pq-composite-kem}}, i.e., the ML-KEM public key followed by the traditional public key, exactly as in X.509.  As for composite ML-DSA ({{sec-composite-mldsa-pkeys}}), the traditional component is not re-encoded, and the sizes given below for RSA-based composites assume the public exponent 65537.
 
 ~~~
 +-------+-----------------------------------------------------------+
@@ -715,10 +611,8 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 37          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1184,                    |
-|       |              trad: bytes of size 256, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 1454         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD29 | Name:        pk-MLKEM768-RSA3072-SHA3-256                 |
 |       | Identifiers: id-MLKEM768-RSA3072-SHA3-256                 |
@@ -726,10 +620,8 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 38          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1184,                    |
-|       |              trad: bytes of size 384, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 1582         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD30 | Name:        pk-MLKEM768-RSA4096-SHA3-256                 |
 |       | Identifiers: id-MLKEM768-RSA4096-SHA3-256                 |
@@ -737,10 +629,8 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 39          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1184,                    |
-|       |              trad: bytes of size 512, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 1710         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD31 | Name:        pk-MLKEM768-X25519-SHA3-256                  |
 |       | Identifiers: id-MLKEM768-X25519-SHA3-256                  |
@@ -748,9 +638,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 3A          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1184,                    |
-|       |              trad: bytes of size 32                       |
+|       |              subjectPublicKey: bytes of size 1216         |
 +-------+-----------------------------------------------------------+
 | TBD32 | Name:        pk-MLKEM768-ECDH-P256-SHA3-256               |
 |       | Identifiers: id-MLKEM768-ECDH-P256-SHA3-256               |
@@ -758,9 +646,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 3B          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1184,                    |
-|       |              trad: bytes of size 33 or 65                 |
+|       |              subjectPublicKey: bytes of size 1249         |
 +-------+-----------------------------------------------------------+
 | TBD33 | Name:        pk-MLKEM768-ECDH-P384-SHA3-256               |
 |       | Identifiers: id-MLKEM768-ECDH-P384-SHA3-256               |
@@ -768,9 +654,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 3C          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1184,                    |
-|       |              trad: bytes of size 49 or 97                 |
+|       |              subjectPublicKey: bytes of size 1281         |
 +-------+-----------------------------------------------------------+
 | TBD34 | Name:        pk-MLKEM768-ECDH-brainpoolP256r1-SHA3-256    |
 |       | Identifiers: id-MLKEM768-ECDH-brainpoolP256r1-SHA3-256    |
@@ -778,9 +662,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 3D          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1184,                    |
-|       |              trad: bytes of size 33 or 65                 |
+|       |              subjectPublicKey: bytes of size 1249         |
 +-------+-----------------------------------------------------------+
 | TBD35 | Name:        pk-MLKEM1024-RSA3072-SHA3-256                |
 |       | Identifiers: id-MLKEM1024-RSA3072-SHA3-256                |
@@ -788,10 +670,8 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 3E          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1568,                    |
-|       |              trad: bytes of size 384, or                  |
-|       |                    array of 2 elements                    |
+|       |              subjectPublicKey: bytes of size 1966         |
+|       |              (with RSA public exponent 65537)             |
 +-------+-----------------------------------------------------------+
 | TBD36 | Name:        pk-MLKEM1024-ECDH-P384-SHA3-256              |
 |       | Identifiers: id-MLKEM1024-ECDH-P384-SHA3-256              |
@@ -799,9 +679,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 3F          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1568,                    |
-|       |              trad: bytes of size 49 or 97                 |
+|       |              subjectPublicKey: bytes of size 1665         |
 +-------+-----------------------------------------------------------+
 | TBD37 | Name:        pk-MLKEM1024-ECDH-brainpoolP384r1-SHA3-256   |
 |       | Identifiers: id-MLKEM1024-ECDH-brainpoolP384r1-SHA3-256   |
@@ -809,9 +687,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 40          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1568,                    |
-|       |              trad: bytes of size 49 or 97                 |
+|       |              subjectPublicKey: bytes of size 1665         |
 +-------+-----------------------------------------------------------+
 | TBD38 | Name:        pk-MLKEM1024-X448-SHA3-256                   |
 |       | Identifiers: id-MLKEM1024-X448-SHA3-256                   |
@@ -819,9 +695,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 41          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1568,                    |
-|       |              trad: bytes of size 56                       |
+|       |              subjectPublicKey: bytes of size 1624         |
 +-------+-----------------------------------------------------------+
 | TBD39 | Name:        pk-MLKEM1024-ECDH-P521-SHA3-256              |
 |       | Identifiers: id-MLKEM1024-ECDH-P521-SHA3-256              |
@@ -829,9 +703,7 @@ In C509, composite KEM public keys use the `CompositePublicKey` structure define
 |       | Parameters:  Absent                                       |
 |       | DER:         30 0A 06 08 2B 06 01 05 05 07 06 42          |
 |       | Comments:    draft-ietf-lamps-pq-composite-kem;           |
-|       |              subjectPublicKey: CompositePublicKey;        |
-|       |              pqc:  bytes of size 1568,                    |
-|       |              trad: bytes of size 67 or 133                |
+|       |              subjectPublicKey: bytes of size 1701         |
 +-------+-----------------------------------------------------------+
 ~~~
 
@@ -847,7 +719,7 @@ For example, with C509PrivateKeyType 0, `subjectPrivateKey` is the PrivateKey OC
 * ML-KEM: the `ML-KEM-512-PrivateKey`, `ML-KEM-768-PrivateKey`, or `ML-KEM-1024-PrivateKey` defined in {{RFC9935}}, i.e., the 64-byte seed, the expanded private key, or both.
 * Composite ML-DSA and composite ML-KEM: the composite private key defined in {{I-D.ietf-lamps-pq-composite-sigs}} and {{I-D.ietf-lamps-pq-composite-kem}}, respectively.
 
-With C509PrivateKeyType 1, `subjectPrivateKey` is a COSE_Key.  For example, ML-DSA private keys can be represented as COSE_Key using the Algorithm Key Pair (AKP) key type defined in {{RFC9964}}.
+With C509PrivateKeyType 1, `subjectPrivateKey` is a COSE_Key.  For example, ML-DSA private keys can be represented as COSE_Key using the Algorithm Key Pair (AKP) key type defined in {{RFC9964}}, and composite ML-DSA private keys using the AKP key type as specified in {{I-D.ietf-jose-pq-composite-sigs}}.
 
 ## Certification Requests {#csr}
 
@@ -904,8 +776,7 @@ TBD: add examples
   * Gave the DER column as the DER encoding of the complete AlgorithmIdentifier and wrote "Absent" for absent parameters.
   * Referred to the signature value as `issuerSignatureValue` or `subjectSignatureValue`.
   * Referenced Section 8.15 of that document for assigning the same value in the signature and public key algorithm registries, and moved this requirement from Security Considerations to IANA Considerations.
-  * Referenced Sections 3.2.1 and 3.2.2 of that document for the EC public key and ECDSA signature encodings within composite structures.
-* Clarified the RSA public key encoding within `CompositePublicKey`, and made the CDDL for `CompositePublicKey` and `CompositeSignatureValue` precise.
+* Changed the encoding of composite public keys and signatures from a two-element CBOR array to the serialization defined in {{I-D.ietf-lamps-pq-composite-sigs}} and {{I-D.ietf-lamps-pq-composite-kem}}, i.e., the same byte string as in X.509.
 * Specified the context string for natively signed ML-DSA and composite ML-DSA signatures.
 * Specified the public key sizes of HSS/LMS, XMSS, and XMSS^MT.
 * Added suggested value ranges to the IANA considerations.
