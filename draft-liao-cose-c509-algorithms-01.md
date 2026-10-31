@@ -35,6 +35,7 @@ normative:
   I-D.ietf-cose-cbor-encoded-cert:
   I-D.ietf-lamps-pq-composite-sigs:
   I-D.ietf-lamps-pq-composite-kem:
+  I-D.ietf-lamps-fn-dsa-certificates:
   FIPS203:
     title: "Module-Lattice-Based Key-Encapsulation Mechanism Standard (FIPS 203)"
     target: https://doi.org/10.6028/NIST.FIPS.203
@@ -53,6 +54,12 @@ normative:
     date: 2024
     seriesinfo:
       DOI: 10.6028/NIST.FIPS.204
+  FIPS206:
+    title: "FN-DSA: FFT over NTRU-Lattice-Based Digital Signature Algorithm (FIPS 206)"
+    author:
+      -
+        org: "National Institute of Standards and Technology (NIST)"
+    date: false
 
 
 informative:
@@ -62,7 +69,7 @@ informative:
 
 --- abstract
 
-This document registers additional algorithms in the IANA registries defined by {{I-D.ietf-cose-cbor-encoded-cert}}.  It extends the C509 certificate specification with post-quantum cryptography (PQC) signature and key encapsulation algorithms: ML-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
+This document registers additional algorithms in the IANA registries defined by {{I-D.ietf-cose-cbor-encoded-cert}}.  It extends the C509 certificate specification with post-quantum cryptography (PQC) signature and key encapsulation algorithms: ML-DSA, FN-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
 
 --- middle
 
@@ -70,7 +77,7 @@ This document registers additional algorithms in the IANA registries defined by 
 
 {{I-D.ietf-cose-cbor-encoded-cert}} defines C509, a compact CBOR encoding of X.509 certificates and certification requests, and establishes a set of IANA registries, including the "C509 Signature Algorithms" and "C509 Public Key Algorithms" registries.  That specification populates these registries with commonly used values and anticipates that new algorithms, including post-quantum algorithms, are registered as they are specified.
 
-This document adds entries to the C509 Signature Algorithms and C509 Public Key Algorithms registries for PQC signature and key encapsulation algorithms: ML-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
+This document adds entries to the C509 Signature Algorithms and C509 Public Key Algorithms registries for PQC signature and key encapsulation algorithms: ML-DSA, FN-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
 
 All new values are registered in the "CBOR Encoded X.509 (C509)" registry group, following the registration procedures defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
@@ -117,6 +124,38 @@ For natively signed C509 certificates and certification requests, the ML-DSA sig
 |       | DER:         30 0B 06 09 60 86 48 01 65 03 04 03 13       |
 |       | Comments:    FIPS 204; RFC 9881;                          |
 |       |              signature: bytes of size 4627                |
++-------+-----------------------------------------------------------+
+~~~
+
+## FN-DSA (FFT over NTRU-Lattice-Based Digital Signature Algorithm)
+
+FN-DSA is a lattice-based digital signature algorithm based on Falcon, standardized by NIST as {{FIPS206}} and specified for use in X.509 PKI by {{I-D.ietf-lamps-fn-dsa-certificates}}.  In C509, the signature value (`issuerSignatureValue` in a C509 certificate, `subjectSignatureValue` in a C509 certification request) is a byte string containing the raw FN-DSA signature.
+
+For natively signed C509 certificates and certification requests, the FN-DSA signature is computed over the CBOR-encoded TBSCertificate or TBSCertificationRequest, respectively, with the context string (ctx) set to the empty string, as specified in {{I-D.ietf-lamps-fn-dsa-certificates}} for the DER-encoded structures.
+
+The OIDs id-fn-dsa-512 and id-fn-dsa-1024 have not yet been assigned by NIST.  The final arc of each OID and the last byte of each DER encoding below are therefore given as TBD.
+
+~~~
++-------+-----------------------------------------------------------+
+| Value | Signature Algorithm                                       |
++=======+===========================================================+
+| TBD40 | Name:        FN-DSA-512                                   |
+|       | Identifiers: id-fn-dsa-512                                |
+|       | OID:         2.16.840.1.101.3.4.3.TBD                     |
+|       | Parameters:  Absent                                       |
+|       | DER:         30 0B 06 09 60 86 48 01 65 03 04 03 TBD      |
+|       | Comments:    FIPS 206; draft-ietf-lamps-fn-dsa-           |
+|       |              certificates;                                |
+|       |              signature: bytes of size 666                 |
++-------+-----------------------------------------------------------+
+| TBD41 | Name:        FN-DSA-1024                                  |
+|       | Identifiers: id-fn-dsa-1024                               |
+|       | OID:         2.16.840.1.101.3.4.3.TBD                     |
+|       | Parameters:  Absent                                       |
+|       | DER:         30 0B 06 09 60 86 48 01 65 03 04 03 TBD      |
+|       | Comments:    FIPS 206; draft-ietf-lamps-fn-dsa-           |
+|       |              certificates;                                |
+|       |              signature: bytes of size 1280                |
 +-------+-----------------------------------------------------------+
 ~~~
 
@@ -321,7 +360,7 @@ The AlgorithmIdentifier parameters are absent for all composite signature algori
 
 This section defines additional entries for the C509 Public Key Algorithms registry established in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
-As required by {{Section 8.15 of I-D.ietf-cose-cbor-encoded-cert}}, a public key algorithm that can only be used with one signature algorithm and that has the same OID as that signature algorithm is assigned the same integer value in both registries.  This applies to the ML-DSA, HSS/LMS, XMSS, XMSS^MT, and composite ML-DSA entries below.  The ML-KEM and composite ML-KEM entries have no counterpart in the C509 Signature Algorithms registry.
+As required by {{Section 8.15 of I-D.ietf-cose-cbor-encoded-cert}}, a public key algorithm that can only be used with one signature algorithm and that has the same OID as that signature algorithm is assigned the same integer value in both registries.  This applies to the ML-DSA, FN-DSA, HSS/LMS, XMSS, XMSS^MT, and composite ML-DSA entries below.  The ML-KEM and composite ML-KEM entries have no counterpart in the C509 Signature Algorithms registry.
 
 ## ML-DSA Public Keys
 
@@ -354,6 +393,34 @@ ML-DSA public keys in X.509 certificates are encoded as specified in {{RFC9881}}
 |       | DER:         30 0B 06 09 60 86 48 01 65 03 04 03 13       |
 |       | Comments:    FIPS 204; RFC 9881;                          |
 |       |              subjectPublicKey: bytes of size 2592         |
++-------+-----------------------------------------------------------+
+~~~
+
+## FN-DSA Public Keys
+
+FN-DSA public keys in X.509 certificates are encoded as specified in {{I-D.ietf-lamps-fn-dsa-certificates}}.  In C509, the `subjectPublicKey` field is a byte string containing the raw FN-DSA public key.  The values TBD40 and TBD41 are the same as in the C509 Signature Algorithms registry.
+
+~~~
++-------+-----------------------------------------------------------+
+| Value | Public Key Algorithm                                      |
++=======+===========================================================+
+| TBD40 | Name:        FN-DSA-512                                   |
+|       | Identifiers: id-fn-dsa-512                                |
+|       | OID:         2.16.840.1.101.3.4.3.TBD                     |
+|       | Parameters:  Absent                                       |
+|       | DER:         30 0B 06 09 60 86 48 01 65 03 04 03 TBD      |
+|       | Comments:    FIPS 206; draft-ietf-lamps-fn-dsa-           |
+|       |              certificates;                                |
+|       |              subjectPublicKey: bytes of size 897          |
++-------+-----------------------------------------------------------+
+| TBD41 | Name:        FN-DSA-1024                                  |
+|       | Identifiers: id-fn-dsa-1024                               |
+|       | OID:         2.16.840.1.101.3.4.3.TBD                     |
+|       | Parameters:  Absent                                       |
+|       | DER:         30 0B 06 09 60 86 48 01 65 03 04 03 TBD      |
+|       | Comments:    FIPS 206; draft-ietf-lamps-fn-dsa-           |
+|       |              certificates;                                |
+|       |              subjectPublicKey: bytes of size 1793         |
 +-------+-----------------------------------------------------------+
 ~~~
 
@@ -716,6 +783,7 @@ In C509, the `subjectPublicKey` field is a byte string containing the composite 
 For example, with C509PrivateKeyType 0, `subjectPrivateKey` is the PrivateKey OCTET STRING value field of the OneAsymmetricKey structure {{RFC5958}}, encoded as a CBOR byte string.  For the algorithms in this document, the PrivateKey content is defined in the following specifications:
 
 * ML-DSA: the `ML-DSA-44-PrivateKey`, `ML-DSA-65-PrivateKey`, or `ML-DSA-87-PrivateKey` defined in {{RFC9881}}, i.e., the 32-byte seed, the expanded private key, or both.
+* FN-DSA: the `FN-DSA-PrivateKey` defined in {{I-D.ietf-lamps-fn-dsa-certificates}}, i.e., the 32-byte seed.
 * ML-KEM: the `ML-KEM-512-PrivateKey`, `ML-KEM-768-PrivateKey`, or `ML-KEM-1024-PrivateKey` defined in {{RFC9935}}, i.e., the 64-byte seed, the expanded private key, or both.
 * Composite ML-DSA and composite ML-KEM: the composite private key defined in {{I-D.ietf-lamps-pq-composite-sigs}} and {{I-D.ietf-lamps-pq-composite-kem}}, respectively.
 
@@ -729,7 +797,7 @@ A C509 certification request is signed by the subject using the algorithm in `su
 
 The security considerations of {{I-D.ietf-cose-cbor-encoded-cert}} apply to all entries registered in this document.
 
-For post-quantum algorithms, implementers should consult the respective NIST standards ({{FIPS203}}, {{FIPS204}}) for guidance on security levels and parameter sets.
+For post-quantum algorithms, implementers should consult the respective NIST standards ({{FIPS203}}, {{FIPS204}}, {{FIPS206}}) for guidance on security levels and parameter sets.
 
 HSS/LMS, XMSS, and XMSS^MT are stateful signature schemes: each one-time key MUST be used to sign at most one message, and the signer has to update its private key state reliably after each signature.  Reusing a one-time key undermines the security of the scheme; see the security considerations of {{RFC8554}}, {{RFC8391}}, and {{RFC9802}}.  Copying or restoring the private key state, for example by exporting it in a private key structure, can lead to such reuse.
 
@@ -743,7 +811,7 @@ IANA is requested to register the entries defined in {{sigalg}} in the "C509 Sig
 
 IANA is requested to register the entries defined in {{pkalg}} in the "C509 Public Key Algorithms" registry within the "CBOR Encoded X.509 (C509)" registry group, following the registration policy defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
-Per {{Section 8.15 of I-D.ietf-cose-cbor-encoded-cert}}, the public key algorithm entries TBD1 through TBD24 MUST be assigned the same values as the corresponding entries in the "C509 Signature Algorithms" registry.
+Per {{Section 8.15 of I-D.ietf-cose-cbor-encoded-cert}}, the public key algorithm entries TBD1 through TBD24, TBD40, and TBD41 MUST be assigned the same values as the corresponding entries in the "C509 Signature Algorithms" registry.
 
 ## Suggested Values
 
@@ -752,6 +820,7 @@ Per {{Section 8.15 of I-D.ietf-cose-cbor-encoded-cert}}, the public key algorith
 Values in the interval \[0, 23\] are encoded in one byte, and values in the interval \[24, 255\] in two bytes ({{Section 8.1 of I-D.ietf-cose-cbor-encoded-cert}}).  Negative values are used in {{I-D.ietf-cose-cbor-encoded-cert}} mainly for deprecated algorithms, such as those based on SHA-1, and are not suggested for the algorithms in this document.  The public keys and signatures of these algorithms are hundreds to thousands of bytes long, so saving one byte per algorithm identifier has little effect on certificate size, whereas the one-byte interval is small.  The following assignments are therefore suggested:
 
 * ML-DSA (TBD1 through TBD3): values from the interval \[0, 23\] that are unassigned in both registries, as ML-DSA is expected to be widely used.
+* FN-DSA (TBD40 and TBD41): values from the interval \[0, 23\] that are unassigned in both registries, as its compact public keys and signatures make FN-DSA well suited to constrained environments.
 * ML-KEM (TBD25 through TBD27): values from the interval \[0, 23\] that are unassigned in the "C509 Public Key Algorithms" registry.  These values need not be unassigned in the "C509 Signature Algorithms" registry.
 * HSS/LMS, XMSS, and XMSS^MT (TBD4 through TBD6): values from the interval \[24, 255\].
 * Composite ML-DSA (TBD7 through TBD24): a contiguous block of values from the interval \[24, 255\] that are unassigned in both registries.
@@ -777,6 +846,7 @@ TBD: add examples
   * Referred to the signature value as `issuerSignatureValue` or `subjectSignatureValue`.
   * Referenced Section 8.15 of that document for assigning the same value in the signature and public key algorithm registries, and moved this requirement from Security Considerations to IANA Considerations.
 * Changed the encoding of composite public keys and signatures from a two-element CBOR array to the serialization defined in {{I-D.ietf-lamps-pq-composite-sigs}} and {{I-D.ietf-lamps-pq-composite-kem}}, i.e., the same byte string as in X.509.
+* Added FN-DSA signature and public key algorithms.
 * Specified the context string for natively signed ML-DSA and composite ML-DSA signatures.
 * Specified the public key sizes of HSS/LMS, XMSS, and XMSS^MT.
 * Added suggested value ranges to the IANA considerations.
