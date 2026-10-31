@@ -1,8 +1,8 @@
 ---
 v: 3
-title: "Additional Algorithms for C509 Certificates"
-docname: draft-liao-cose-c509-algorithms-01
-abbrev: C509 Algorithms
+title: "Post-Quantum Algorithms for C509 Certificates"
+docname: draft-liao-cose-c509-pq-algorithms-00
+abbrev: C509 PQ Algorithms
 cat: std
 submissiontype: IETF
 coding: utf-8
@@ -69,7 +69,7 @@ informative:
 
 --- abstract
 
-This document registers additional algorithms in the IANA registries defined by {{I-D.ietf-cose-cbor-encoded-cert}}.  It extends the C509 certificate specification with post-quantum cryptography (PQC) signature and key encapsulation algorithms: ML-DSA, FN-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
+This document registers post-quantum algorithms in the IANA registries defined by {{I-D.ietf-cose-cbor-encoded-cert}}.  It extends the C509 certificate specification with post-quantum cryptography (PQC) signature and key encapsulation algorithms: ML-DSA, FN-DSA, ML-KEM, and the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, as well as with composite ML-DSA and ML-KEM algorithms, which combine a PQC algorithm with a traditional algorithm.
 
 --- middle
 
@@ -77,7 +77,7 @@ This document registers additional algorithms in the IANA registries defined by 
 
 {{I-D.ietf-cose-cbor-encoded-cert}} defines C509, a compact CBOR encoding of X.509 certificates and certification requests, and establishes a set of IANA registries, including the "C509 Signature Algorithms" and "C509 Public Key Algorithms" registries.  That specification populates these registries with commonly used values and anticipates that new algorithms, including post-quantum algorithms, are registered as they are specified.
 
-This document adds entries to the C509 Signature Algorithms and C509 Public Key Algorithms registries for PQC signature and key encapsulation algorithms: ML-DSA, FN-DSA, ML-KEM, the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT, and composite ML-DSA and ML-KEM algorithms.
+This document adds entries to the C509 Signature Algorithms and C509 Public Key Algorithms registries for PQC signature and key encapsulation algorithms: ML-DSA, FN-DSA, ML-KEM, and the stateful hash-based signature algorithms HSS/LMS, XMSS, and XMSS^MT.  It also adds entries for the composite ML-DSA and ML-KEM algorithms, which combine a PQC algorithm with a traditional algorithm into a single post-quantum/traditional (PQ/T) hybrid algorithm.
 
 All new values are registered in the "CBOR Encoded X.509 (C509)" registry group, following the registration procedures defined in {{I-D.ietf-cose-cbor-encoded-cert}}.
 
@@ -837,9 +837,10 @@ TBD: add examples
 
 *RFC Editor's Note:* Please remove this section before publication.
 
-## Changes from -00 to -01
+## Changes from draft-liao-cose-c509-algorithms-00
 {:numbered="false"}
 
+* Renamed the document from draft-liao-cose-c509-algorithms to draft-liao-cose-c509-pq-algorithms to reflect its scope.
 * Aligned with draft-ietf-cose-cbor-encoded-cert-21:
   * Used the registry group name "CBOR Encoded X.509 (C509)".
   * Gave the DER column as the DER encoding of the complete AlgorithmIdentifier and wrote "Absent" for absent parameters.
